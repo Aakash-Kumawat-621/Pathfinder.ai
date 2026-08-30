@@ -1,35 +1,45 @@
-# Pathify.ai — PathFinder Backend
+# Pathify.ai — PathFinder
 
-FastAPI backend for the PathFinder personalized learning-path recommender.
+PathFinder is an AI-powered personalized learning-path recommender built around a two-stage ML core (TF-IDF + NB classification + cosine ranking) exposed via FastAPI.
 
-## What is implemented
+## Implemented architecture
 
-- `POST /chat`: parses free-text learner goal into structured profile fields.
-- `POST /profile`: maintains learner profile contract.
-- `POST /recommend`: wraps a two-stage recommender (NB track prediction + cosine ranking within track).
-- `POST /path`: returns ordered roadmap items.
-- `POST /explain`: generates short recommendation rationales.
-- `POST /progress`: computes completion progress and next actions.
-- `GET /health`: healthcheck endpoint.
+- Backend: FastAPI service
+- ML core: Reused two-stage recommendation flow (`/recommend`)
+- Conversational/profile parsing: `/chat` (LLM-ready with deterministic fallback)
+- Learning-path sequencing: `/path` (milestone ordering)
+- Explainability layer: `/explain` (LLM-ready with deterministic fallback)
+- Dashboard data: `/progress`
+- Frontend: lightweight live demo UI served at `/`
 
-## Learner profile contract
+## API endpoints
+
+- `GET /health`
+- `POST /chat`
+- `POST /profile`
+- `POST /recommend`
+- `POST /path`
+- `POST /explain`
+- `POST /progress`
+
+## Learner profile contract (frozen)
 
 ```json
 {
   "learner_id": "uuid",
-  "goal_statement": "I want to become a cloud engineer",
-  "skill_level": "beginner",
-  "interests": ["cloud"],
+  "goal_statement": "free text from chat",
+  "skill_level": "beginner | intermediate | advanced",
+  "interests": ["cloud", "machine learning"],
   "completed_courses": ["AWS Cloud Practitioner"],
-  "predicted_track": "cloud",
+  "predicted_track": "from NB classifier",
   "recommended_path": [
     {
       "step": 1,
-      "course": "Cloud Foundations",
+      "course": "string",
       "similarity_score": 0.83,
-      "rationale": "Matches your goal using cloud concepts found in your query.",
+      "rationale": "LLM-generated explanation",
       "milestone": "Foundations",
-      "status": "not_started"
+      "status": "not_started | in_progress | complete"
     }
   ],
   "progress_pct": 0
@@ -38,14 +48,25 @@ FastAPI backend for the PathFinder personalized learning-path recommender.
 
 ## Model artifact loading
 
-At startup, the API tries loading frozen artifacts from `PATHIFY_ARTIFACTS_DIR`:
+Set `PATHIFY_ARTIFACTS_DIR` with the exported artifacts:
 
 - `vectorizer.joblib`
 - `classifier.joblib`
 - `courses.joblib`
 - `course_matrix.joblib`
 
-If not present, it boots with a small built-in fallback dataset while preserving the same two-stage logic.
+If artifacts are absent, the service uses a built-in fallback dataset while preserving the same two-stage logic.
+
+## Optional LLM wiring
+
+Set these env vars to plug `/chat`, `/path`, `/explain` into your LLM gateway:
+
+- `PATHIFY_LLM_URL`
+- `PATHIFY_LLM_API_KEY` (optional)
+- `PATHIFY_LLM_MODEL` (optional)
+- `PATHIFY_LLM_TIMEOUT` (optional, seconds)
+
+Without them, deterministic fallback behavior is used.
 
 ## Run locally
 
@@ -53,6 +74,8 @@ If not present, it boots with a small built-in fallback dataset while preserving
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
+
+Visit `http://127.0.0.1:8000/` for the demo UI.
 
 ## Run tests
 
