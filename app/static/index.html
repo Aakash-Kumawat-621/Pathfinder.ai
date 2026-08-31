@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PathFinder</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#0b1020;color:#e8ecff;margin:0}
+    .wrap{max-width:980px;margin:0 auto;padding:20px}
+    .card{background:#121a33;border:1px solid #23315f;border-radius:12px;padding:16px;margin-bottom:14px}
+    input,button,textarea{padding:10px;border-radius:8px;border:1px solid #304273;background:#0c1430;color:#fff}
+    button{cursor:pointer;background:#3d63ff;border:none}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{background:#1d2852;padding:4px 8px;border-radius:999px;font-size:12px}
+    .muted{color:#a8b3da}
+    ol{padding-left:20px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PathFinder</h1>
+  <p class="muted">Chat → Recommend → Learning Path → Progress</p>
+
+  <div class="card">
+    <h3>1) Conversational Goal Input</h3>
+    <div class="row">
+      <input id="goal" style="flex:1;min-width:260px" value="I want to become a cloud engineer as a beginner"/>
+      <button onclick="runFlow()">Generate Path</button>
+    </div>
+    <pre id="profile" class="muted"></pre>
+  </div>
+
+  <div class="card">
+    <h3>2) Recommended Learning Path</h3>
+    <ol id="path"></ol>
+  </div>
+
+  <div class="card">
+    <h3>3) Dashboard</h3>
+    <p id="progress" class="muted">Progress: 0%</p>
+    <div id="next"></div>
+  </div>
+</div>
+<script>
+async function runFlow(){
+  const goal = document.getElementById('goal').value;
+  const chat = await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:goal})}).then(r=>r.json());
+  document.getElementById('profile').textContent = JSON.stringify(chat,null,2);
+
+  const rec = await fetch('/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal_statement:chat.goal_statement,skill_level:chat.skill_level,completed_courses:chat.completed_courses})}).then(r=>r.json());
+  const ordered = await fetch('/path',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recommended_path:rec.recommended_path})}).then(r=>r.json());
+  const explained = await fetch('/explain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal_statement:chat.goal_statement,recommended_path:ordered.recommended_path})}).then(r=>r.json());
+
+  const list = document.getElementById('path');
+  list.innerHTML='';
+  explained.recommended_path.forEach(item=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<strong>${item.course}</strong> <span class="pill">${item.milestone}</span><br><span class="muted">${item.rationale}</span>`;
+    list.appendChild(li);
+  });
+
+  if (explained.recommended_path.length) explained.recommended_path[0].status='in_progress';
+  const prog = await fetch('/progress',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recommended_path:explained.recommended_path})}).then(r=>r.json());
+  document.getElementById('progress').textContent = `Progress: ${prog.progress_pct}% (${prog.completed_steps}/${prog.total_steps})`;
+  document.getElementById('next').innerHTML = '<strong>Next actions:</strong> ' + (prog.next_actions.join(', ') || 'Complete current step');
+}
+</script>
+</body>
+</html>
