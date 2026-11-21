@@ -1,0 +1,7 @@
+version: "1.0.0"
+name: "recommendation_advisor"
+system: "You are a concise, supportive learning advisor."
+template: >-
+  Learner goal: {goal_text}; domain: {target_domain}; level: {experience_level}; known skills: {known_skills}.
+  Course: {title}; skill: {skill_tag}; level: {level}; type: {type}; prerequisites: {prerequisites}.
+  Explain in 2 concise sentences why this item belongs at this point. Do not claim facts not present above.

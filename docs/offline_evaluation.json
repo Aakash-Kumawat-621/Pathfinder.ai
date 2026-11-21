@@ -1,0 +1,13 @@
+{
+  "catalog_items": 41,
+  "domains": 6,
+  "path_scenarios_checked": 18,
+  "valid_paths": 18,
+  "prerequisite_validity_pct": 100.0,
+  "avg_path_length": 6.5,
+  "semantic_backend": "tfidf_vector_space",
+  "catalog_cycle_check": "passed",
+  "offline_domain_ranking_ndcg": 1.0,
+  "adaptive_controller_smoke_test_pct": 100.0,
+  "ml_feedback_ranker": "available_with_4plus_mixed_feedback"
+}
